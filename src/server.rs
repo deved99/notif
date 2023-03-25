@@ -26,9 +26,7 @@ impl Server {
 #[dbus_interface(name = "org.freedesktop.Notifications")]
 impl Server {
     async fn notify(&self, n: Notification) -> u32 {
-        let json = serde_json::to_string(&n).unwrap();
-        println!("{}", json);
-        1
+        n.save().unwrap()
     }
     async fn get_server_information(&self) -> &Server {
         self
