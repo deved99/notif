@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use zvariant::{OwnedValue, Type};
 
-use crate::{db, utils, Error, Result};
+use crate::{db, Error, Result};
 
 #[derive(Type, Deserialize, Serialize)]
 pub struct Notification {
@@ -18,6 +18,45 @@ pub struct Notification {
 }
 
 impl Notification {
+    pub fn list() -> Result<Vec<Self>> {
+        let db = db::get_connection()?;
+        let mut stmt = db.prepare(
+            "SELECT id, app_name, app_icon, summary, body, actions, hints, expire_timeout 
+            FROM notifications
+            WHERE closed = 0",
+        )?;
+        let notifications = stmt
+            .query_map([], |row| {
+                Ok((
+                    row.get::<usize, i32>(0)?,
+                    row.get(1)?,
+                    row.get(2)?,
+                    row.get(3)?,
+                    row.get(4)?,
+                    row.get::<usize, String>(5)?,
+                    row.get::<usize, String>(6)?,
+                    row.get(7)?,
+                ))
+            })?
+            .map(|x| {
+                x.map_err(Error::from).and_then(
+                    |(id, app_name, app_icon, summary, body, actions, hints, expire_timeout)| {
+                        Ok(Self {
+                            id: id as u32,
+                            app_name,
+                            app_icon,
+                            summary,
+                            body,
+                            actions: serde_json::from_str(&actions)?,
+                            hints: serde_json::from_str(&hints)?,
+                            expire_timeout,
+                        })
+                    },
+                )
+            })
+            .collect();
+        notifications
+    }
     pub fn save(&self) -> Result<u32> {
         let db = db::get_connection()?;
         let actions = serde_json::to_string(&self.actions)?;
@@ -88,5 +127,11 @@ impl Notification {
             panic!("I expected to be inserting exactly one row: {:?}", results);
         }
         Ok(results[0])
+    }
+    pub fn close(id: u32) -> Result<()> {
+        let db = db::get_connection()?;
+        db.execute("UPDATE notifications SET closed = 1 WHERE id = ?", (id as i32,))
+            .map_err(Error::from)
+            .map(|_| ())
     }
 }

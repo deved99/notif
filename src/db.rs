@@ -25,7 +25,8 @@ pub fn create_tables(connection: &Connection) -> Result<()> {
             body TEXT,
             actions TEXT,
             hints TEXT,
-            expire_timeout INTEGER
+            expire_timeout INTEGER,
+            closed INTEGER DEFAULT 0
         )",
         (),
     )?;
