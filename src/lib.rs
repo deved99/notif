@@ -13,7 +13,7 @@ use clap::Parser;
 #[derive(Parser, Debug)]
 struct Cli {
     #[command(subcommand)]
-    command: Command
+    command: Command,
 }
 
 #[derive(Debug, clap::Subcommand)]
@@ -23,13 +23,23 @@ enum Command {
     /// Close a notifications
     Close { id: u32 },
     /// Start the notification server.
-    Read
+    Read,
 }
 impl Command {
     async fn run(&self) -> Result<()> {
         match self {
             Self::Server => Server::new().start().await,
-            Self::Close{id} => Notification::close(*id),
+            Self::Close { id } => {
+                let connection = zbus::Connection::session().await?;
+                connection.call_method(
+                    Some("org.freedesktop.Notifications"),
+                    "/org/freedesktop/Notifications",
+                    Some("org.freedesktop.Notifications"),
+                    "CloseNotification",
+                    &(id, 2 as u32),
+                ).await?;
+                Ok(())
+            },
             Self::Read => {
                 let notifications = Notification::list()?;
                 let json = serde_json::to_string(&notifications)?;

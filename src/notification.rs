@@ -128,9 +128,9 @@ impl Notification {
         }
         Ok(results[0])
     }
-    pub fn close(id: u32) -> Result<()> {
+    pub fn close(id: u32, reason: u32) -> Result<()> {
         let db = db::get_connection()?;
-        db.execute("UPDATE notifications SET closed = 1 WHERE id = ?", (id as i32,))
+        db.execute("UPDATE notifications SET closed = ? WHERE id = ?", (reason, id as i32))
             .map_err(Error::from)
             .map(|_| ())
     }

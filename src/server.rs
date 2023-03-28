@@ -44,6 +44,9 @@ impl Server {
     async fn notify(&self, n: Notification) -> u32 {
         n.save().unwrap()
     }
+    async fn close_notification(&self, id: u32, reason: u32) {
+        Notification::close(id, reason).unwrap()
+    }
     async fn get_server_information(&self) -> &Server {
         self
     }
