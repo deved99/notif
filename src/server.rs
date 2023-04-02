@@ -4,6 +4,19 @@ use serde::{Deserialize, Serialize};
 use zbus::{dbus_interface, Connection};
 use zvariant::Type;
 
+const CAPABILITIES: [&str; 10] = [
+    "action-icons",
+    "actions",
+    "body",
+    "body-hyperlinks",
+    "body-images",
+    "body-markup",
+    "icon-multi",
+    "icon-static",
+    "persistence",
+    "sound",
+];
+
 #[derive(Type, Deserialize, Serialize)]
 pub struct Server {
     name: String,
@@ -42,6 +55,8 @@ impl Server {
 #[dbus_interface(name = "org.freedesktop.Notifications")]
 impl Server {
     async fn notify(&self, n: Notification) -> u32 {
+        let json = serde_json::to_string(&n).unwrap();
+        println!("{}", json);
         n.save().unwrap()
     }
     async fn close_notification(&self, id: u32, reason: u32) {
@@ -49,5 +64,8 @@ impl Server {
     }
     async fn get_server_information(&self) -> &Server {
         self
+    }
+    async fn get_capabilities(&self) -> [&str; 10] {
+        CAPABILITIES
     }
 }
